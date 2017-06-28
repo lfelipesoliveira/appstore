@@ -1,51 +1,57 @@
-var horizontal = require('viewability/horizontal');
-var vertical = require('viewability/vertical');
+import horizontal from "viewability/horizontal";
+import vertical from "viewability/vertical";
 
-var objCache = [];
+let objCache = [];
 
-var currPush = [];
+let currPush = [];
 
 setTimeout(getItems, 1000);
 // todo: incluir banners alem dos produtos
-/*function getBanners(){
-	var banners = $('a.js-banner')
-	banners.each(function(){
-		if () {}
 
-
-
-	})
-
-
-
-}
-*/
 function getItems(){ // Para Itens da Store
 	
-	var $items = $('a.js-product-item');
+	const $items = $('a.js-product-item, a.js-banner');
 	$items.each(function(){
 		if (!~objCache.indexOf(this) && isVisible(this)) {
 			currPush.push(this);
 			objCache.push(this);
 		}
 	});
-	if(currPush.length){
 
-		var produtos = currPush.map(function(item){
-			return {
-				name: name(item),
-				list: item.dataset.productList,
-				brand:'Vivo App Store',
-				category: category(item),
-				position: item.dataset.productIndex
-			}
-		});
+	if(currPush.length){
+		const produtos = currPush
+      .filter(function(item){return $(item).is('.js-product-item')})
+      .map(function (item) {
+        return {
+          name: productName(item),
+          list: item.dataset.productList,
+          brand: 'Vivo App Store',
+          category: productCategory(item),
+          position: item.dataset.productIndex
+        }
+      });
+
+    const banners = currPush
+      .filter(function(item){return $(item).is('.js-banner')
+				&& (!$(item).is('.js-carousel-item') || parseInt(item.dataset['carouselIndex']) > parseInt(item.dataset['slickIndex']))})
+      .map(function (item) {
+        return {
+          'id': item.dataset['itemid'],
+          'name': item.dataset['productName'],
+          'creative': item.dataset['bannerName'],
+          'position': '{{DL - page.type}}:'+
+					($(item).is('.js-carousel-item ') ? 'carousel'+':'+item.dataset['carouselIndex'] : 'banner')
+        }
+      });
 
 		dataLayerGauge.push({
-			event:'productImpressions',
+			event:'productBannerImpressions',
 			ecommerce: {
-				impressions: produtos
-			}
+        impressions: produtos,
+        promoView: {
+          'promotions': banners
+        }
+      }
 		});
 		currPush = [];	
 	}
@@ -58,12 +64,12 @@ function isVisible(el){
 	return vertical(el).value * horizontal(el).value > 0.5;
 }
 
-function name(product) {
-	return product.dataset.productList == 'vivo-sounds' ?
+function productName(product) {
+	return product.dataset.productList === 'vivo-sounds' ?
 	$(product).children('span').attr('title') :
 	product.dataset.productName;
 }
 
-function category(product) {
-	return product.dataset.productList == 'vivo-sounds' ? 'vivo-sounds' : product.dataset.productCategory
+function productCategory(product) {
+	return product.dataset.productList === 'vivo-sounds' ? 'vivo-sounds' : product.dataset.productCategory
 }
